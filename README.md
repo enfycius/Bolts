@@ -19,4 +19,4 @@ Based on ZED Stereo Camera
 
 ## Experiment
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/R5_7TohjqF8?si=ntFs5CEdt2stjmpM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+[![YouTube](https://i9.ytimg.com/vi_webp/R5_7TohjqF8/mq1.webp?sqp=COzcwqsG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGGUgZShlMA8=&rs=AOn4CLCC_BvVLIy4ky1ETMqEvTpnKG-y8w)](https://www.youtube.com/watch?v=R5_7TohjqF8)
