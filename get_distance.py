@@ -6,6 +6,13 @@ import sys
 import math
 import argparse
 
+def coords(s):
+    try:
+        x, y = map(int, s.split(','))
+        return x, y
+    except:
+        raise argparse.ArgumentTypeError("Coordinates must be x, y")
+
 def main():
     svo_input_path = opt.input_svo_file
 
@@ -37,8 +44,8 @@ def main():
 
             x = round(image.get_width() / 2)
             y = round(image.get_height() / 2)
-            err, p1 = point_cloud.get_value(871, 985)
-            err, p2 = point_cloud.get_value(879, 982)
+            err, p1 = point_cloud.get_value(opt.p1[0][0], opt.p1[0][1])
+            err, p2 = point_cloud.get_value(opt.p2[0][0], opt.p2[0][1])
 
             if math.isfinite(p1[2]) or math.isfinite(p2[2]):
                 distance = math.sqrt( ((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2) )
@@ -53,7 +60,9 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_svo_file', type=str, required=True, help='Path to the .svo file')
-    
+    parser.add_argument('--p1', help="Coordinate", type=coords, required=True, nargs=1)
+    parser.add_argument('--p2', help="Coordinate", type=coords, required=True, nargs=1)
+
     opt = parser.parse_args()
     
     if not opt.input_svo_file.endswith(".svo"): 
