@@ -15,6 +15,7 @@ def coords(s):
 
 def main():
     svo_input_path = opt.input_svo_file
+    frame_rate = opt.frame_rate
 
     zed = sl.Camera()
 
@@ -35,8 +36,10 @@ def main():
     point_cloud = sl.Mat()
 
     i = 0
+    sum_of_distance = 0
+    count_of_distance = 0
 
-    while i < 50:
+    while i < frame_rate:
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             zed.retrieve_image(image, sl.VIEW.LEFT)
             zed.retrieve_measure(depth, sl.MEASURE.DEPTH)
@@ -49,17 +52,31 @@ def main():
 
             if math.isfinite(p1[2]) or math.isfinite(p2[2]):
                 distance = math.sqrt( ((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2) )
+
+                if not math.isnan(distance):
+                    sum_of_distance += distance
+
+                    count_of_distance += 1
+
                 print(f"Distance: {distance}")
             else : 
                 print(f"The distance can not be computed at the specific pixel coordinates")    
 
         i += 1
-           
+
+    if count_of_distance == 0:
+        print("No measured value")
+    else:
+        print("Sum of the distances:", sum_of_distance)
+        print("Count of the distances:", count_of_distance)
+        print("Average of the distances:", (sum_of_distance / count_of_distance))
+
     zed.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_svo_file', type=str, required=True, help='Path to the .svo file')
+    parser.add_argument('--frame_rate', type=int, required=True, help='Specify the frame rate')
     parser.add_argument('--p1', help="Coordinate", type=coords, required=True, nargs=1)
     parser.add_argument('--p2', help="Coordinate", type=coords, required=True, nargs=1)
 
