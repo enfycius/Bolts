@@ -38,7 +38,7 @@ python get_distance.py --input_svo_file <input_svo_file> --p1 100,100 --p2 200,2
 ```
 
 Arguments:
-* --input_svo_file: Path to an existing .svo file
+* --input_svo_file: Path to the existing .svo file
 * --p1: First pixel coordinates in the left 2D image (ex. (100, 100))
 * --p2: Second pixel coordinates in the left 2D image (ex. (200, 200))
 * --frame_rate: Frame rate for the SVO file to be referenced (ex. 100 frame rate)
