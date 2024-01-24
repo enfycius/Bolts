@@ -48,11 +48,15 @@ def main():
     sum_of_distances = [0 for i in range(0, len(df))]
     count_of_distances = [0 for i in range(0, len(df))]
 
+    df_distances = pd.DataFrame(columns = [str(i) for i in range(0, len(df))])
+    
     while i < frame_rate:
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             zed.retrieve_image(image, sl.VIEW.LEFT)
             zed.retrieve_measure(depth, sl.MEASURE.DEPTH)
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
+
+            distances_l = [0 for i in range(0, len(df))]
 
             for j in range(0, len(df)):
                 x1 = df['found_x1'].iloc[j].item()
@@ -71,6 +75,10 @@ def main():
                         sum_of_distances[j] += distance
                         count_of_distances[j] += 1
 
+                        distances_l[j] = distance
+
+                        df_distances = pd.concat([df_distances, pd.DataFrame([distances_l], columns = df_distances.columns)], ignore_index=True)
+
                         print(f"Distance: {distance}")
                 else : 
                     print(f"The distance can not be computed at the specific pixel coordinates")
@@ -83,9 +91,8 @@ def main():
     results['count_of_distances'] = count_of_distances
     results['average_of_distances'] = results['sum_of_distances'] / results['count_of_distances']
 
-    print(results)
-
     results.to_csv(opt.output_path + '/' + "results.csv")
+    df_distances.to_csv(opt.output_path + '/' + "distances.csv")
 
     ref = pd.read_csv(bolts_csv_input_path, header=None)
 
