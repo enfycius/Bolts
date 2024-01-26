@@ -17,7 +17,8 @@ def coords(s):
 
 def main():
     svo_input_path = opt.input_svo_file
-    coordinates_csv_input_path = opt.input_boundaries_file
+    coordinates_x_csv_input_path = opt.input_boundaries_x_file
+    coordinates_y_csv_input_path = opt.input_boundaries_y_file
     bolts_csv_input_path = opt.input_bolts_file
     frame_rate = opt.frame_rate
 
@@ -28,8 +29,11 @@ def main():
     init_params.svo_real_time_mode = False 
     init_params.coordinate_units = sl.UNIT.MILLIMETER 
 
-    df = pd.read_csv(coordinates_csv_input_path)
-    df = df.astype(int)
+    df_x = pd.read_csv(coordinates_x_csv_input_path)
+    df_x = df_x.astype(int)
+
+    df_y = pd.read_csv(coordinates_y_csv_input_path)
+    df_y = df_y.astype(int)
 
     status = zed.open(init_params)
 
@@ -45,10 +49,14 @@ def main():
 
     i = 0
 
-    sum_of_distances = [0 for i in range(0, len(df))]
-    count_of_distances = [0 for i in range(0, len(df))]
+    sum_of_distances_x = [0 for i in range(0, len(df_x))]
+    count_of_distances_x = [0 for i in range(0, len(df_x))]
 
-    df_distances = pd.DataFrame(columns = [str(i) for i in range(0, len(df))])
+    sum_of_distances_y = [0 for i in range(0, len(df_y))]
+    count_of_distances_y = [0 for i in range(0, len(df_y))]
+
+    df_x_distances = pd.DataFrame(columns = [str(i) for i in range(0, len(df_x))])
+    df_y_distances = pd.DataFrame(columns = [str(i) for i in range(0, len(df_y))])
     
     while i < frame_rate:
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
@@ -56,14 +64,15 @@ def main():
             zed.retrieve_measure(depth, sl.MEASURE.DEPTH)
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
 
-            distances_l = [0 for i in range(0, len(df))]
+            distances_x_l = [0 for i in range(0, len(df_x))]
+            distances_y_l = [0 for i in range(0, len(df_y))]
 
-            for j in range(0, len(df)):
-                x1 = df['found_x1'].iloc[j].item()
-                y1 = df['found_y1'].iloc[j].item()
+            for j in range(0, len(df_x)):
+                x1 = df_x['found_x1_x'].iloc[j].item()
+                y1 = df_x['found_y1_x'].iloc[j].item()
 
-                x2 = df['found_x2'].iloc[j].item()
-                y2 = df['found_y2'].iloc[j].item()
+                x2 = df_x['found_x2_x'].iloc[j].item()
+                y2 = df_x['found_y2_x'].iloc[j].item()
 
                 err, p1 = point_cloud.get_value(x1, y1)
                 err, p2 = point_cloud.get_value(x2, y2)
@@ -72,27 +81,61 @@ def main():
                     distance = math.sqrt( ((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2) )
 
                     if not math.isnan(distance):
-                        sum_of_distances[j] += distance
-                        count_of_distances[j] += 1
+                        sum_of_distances_x[j] += distance
+                        count_of_distances_x[j] += 1
 
-                        distances_l[j] = distance
+                        distances_x_l[j] = distance
 
-                        df_distances = pd.concat([df_distances, pd.DataFrame([distances_l], columns = df_distances.columns)], ignore_index=True)
+                        df_x_distances = pd.concat([df_x_distances, pd.DataFrame([distances_x_l], columns = df_x_distances.columns)], ignore_index=True)
 
-                        print(f"Distance: {distance}")
+                        print(f"Distance for axis = 0: {distance}")
+                else : 
+                    print(f"The distance can not be computed at the specific pixel coordinates")
+
+
+            for j in range(0, len(df_y)):
+                x1 = df_y['found_x1_y'].iloc[j].item()
+                y1 = df_y['found_y1_y'].iloc[j].item()
+
+                x2 = df_y['found_x2_y'].iloc[j].item()
+                y2 = df_y['found_y2_y'].iloc[j].item()
+
+                err, p1 = point_cloud.get_value(x1, y1)
+                err, p2 = point_cloud.get_value(x2, y2)
+
+                if math.isfinite(p1[2]) or math.isfinite(p2[2]):
+                    distance = math.sqrt( ((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2) )
+
+                    if not math.isnan(distance):
+                        sum_of_distances_y[j] += distance
+                        count_of_distances_y[j] += 1
+
+                        distances_y_l[j] = distance
+
+                        df_y_distances = pd.concat([df_y_distances, pd.DataFrame([distances_y_l], columns = df_y_distances.columns)], ignore_index=True)
+
+                        print(f"Distance for axis = 1: {distance}")
                 else : 
                     print(f"The distance can not be computed at the specific pixel coordinates")
 
         i += 1
 
-    results = pd.DataFrame(columns = ['sum_of_distances', 'count_of_distances'])
+    results_x = pd.DataFrame(columns = ['sum_of_distances', 'count_of_distances'])
+    results_y = pd.DataFrame(columns = ['sum_of_distances', 'count_of_distances'])
 
-    results['sum_of_distances'] = sum_of_distances
-    results['count_of_distances'] = count_of_distances
-    results['average_of_distances'] = results['sum_of_distances'] / results['count_of_distances']
+    results_x['sum_of_distances'] = sum_of_distances_x
+    results_x['count_of_distances'] = count_of_distances_x
+    results_x['average_of_distances'] = results_x['sum_of_distances'] / results_x['count_of_distances']
 
-    results.to_csv(opt.output_path + '/' + "results.csv")
-    df_distances.to_csv(opt.output_path + '/' + "distances.csv")
+    results_y['sum_of_distances'] = sum_of_distances_y
+    results_y['count_of_distances'] = count_of_distances_y
+    results_y['average_of_distances'] = results_y['sum_of_distances'] / results_y['count_of_distances']
+
+    results_x.to_csv(opt.output_path + '/' + "results_x.csv")
+    results_y.to_csv(opt.output_path + '/' + "results_y.csv")
+
+    df_x_distances.to_csv(opt.output_path + '/' + "distances_x.csv")
+    df_y_distances.to_csv(opt.output_path + '/' + "distances_y.csv")
 
     ref = pd.read_csv(bolts_csv_input_path, header=None)
 
@@ -115,24 +158,38 @@ def main():
         radius = int(radius)
         
         img = cv2.circle(img, (centerX, centerY), radius, (255, 255, 255), 3)
+        
+    img_x = img.copy()
+    img_y = img.copy()
 
-    for i in range(0, len(df)):
-        x1 = df['found_x1'].iloc[i].item()
-        y1 = df['found_y1'].iloc[i].item()
+    for i in range(0, len(df_x)):
+        x1 = df_x['found_x1_x'].iloc[i].item()
+        y1 = df_x['found_y1_x'].iloc[i].item()
 
-        x2 = df['found_x2'].iloc[i].item()
-        y2 = df['found_y2'].iloc[i].item()
+        x2 = df_x['found_x2_x'].iloc[i].item()
+        y2 = df_x['found_y2_x'].iloc[i].item()
 
-        img = cv2.putText(img, str(round(results['average_of_distances'].iloc[i].item(), 2)), (int((x1 + x2) / 2 - 15), int((y1 + y2) / 2 - 15)), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+        img_x = cv2.putText(img_x, str(round(results_x['average_of_distances'].iloc[i].item(), 2)), (int((x1 + x2) / 2 - 15), int((y1 + y2) / 2 - 15)), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
-    cv2.imwrite(opt.output_path + '/' + "results.png", img)
+    for i in range(0, len(df_y)):
+        x1 = df_y['found_x1_y'].iloc[i].item()
+        y1 = df_y['found_y1_y'].iloc[i].item()
+
+        x2 = df_y['found_x2_y'].iloc[i].item()
+        y2 = df_y['found_y2_y'].iloc[i].item()
+
+        img_y = cv2.putText(img_y, str(round(results_y['average_of_distances'].iloc[i].item(), 2)), (int((x1 + x2) / 2 - 15), int((y1 + y2) / 2 + 5)), cv2.FONT_HERSHEY_PLAIN, 0.5, (255, 255, 255), 1)
+
+    cv2.imwrite(opt.output_path + '/' + "results_x.png", img_x)
+    cv2.imwrite(opt.output_path + '/' + "results_y.png", img_y)
 
     zed.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_svo_file', type=str, required=True, help='Path to the .svo file')
-    parser.add_argument('--input_boundaries_file', type=str, required=True, help='Path to the .csv file with info about boundaries of bolts')
+    parser.add_argument('--input_boundaries_x_file', type=str, required=True, help='Path to the .csv file with info about boundaries of bolts for axis=0')
+    parser.add_argument('--input_boundaries_y_file', type=str, required=True, help='Path to the .csv file with info about boundaries of bolts for axis=1')
     parser.add_argument('--input_bolts_file', type=str, required=True, help='Path to the .csv file with bolts info')
     parser.add_argument('--output_path', type=str, required=True, help='Path to the output image')
     parser.add_argument('--width', type=int, required=True, help='Specify the width of the left image')
@@ -145,8 +202,12 @@ if __name__ == "__main__":
         print("--input_svo_file parameter should be a .svo file but is not : ", opt.input_svo_file,"Exit program.")
         exit()
 
-    if not opt.input_boundaries_file.endswith(".csv"): 
-        print("--input_boundaries_file parameter should be a .csv file but is not : ", opt.input_boundaries_file,"Exit program.")
+    if not opt.input_boundaries_x_file.endswith(".csv"): 
+        print("--input_boundaries_x_file parameter should be a .csv file but is not : ", opt.input_boundaries_x_file,"Exit program.")
+        exit()
+
+    if not opt.input_boundaries_y_file.endswith(".csv"): 
+        print("--input_boundaries_y_file parameter should be a .csv file but is not : ", opt.input_boundaries_y_file,"Exit program.")
         exit()
 
     if not opt.input_bolts_file.endswith(".csv"): 
@@ -157,8 +218,12 @@ if __name__ == "__main__":
         print("--input_svo_file parameter should be an existing file but is not : ", opt.input_svo_file,"Exit program.")
         exit()
 
-    if not os.path.isfile(opt.input_boundaries_file):
-        print("--input_boundaries_file parameter should be an existing file but is not : ", opt.input_boundaries_file,"Exit program.")
+    if not os.path.isfile(opt.input_boundaries_x_file):
+        print("--input_boundaries_x_file parameter should be an existing file but is not : ", opt.input_boundaries_x_file,"Exit program.")
+        exit()
+
+    if not os.path.isfile(opt.input_boundaries_x_file):
+        print("--input_boundaries_y_file parameter should be an existing file but is not : ", opt.input_boundaries_y_file,"Exit program.")
         exit()
 
     if not os.path.isfile(opt.input_bolts_file):
